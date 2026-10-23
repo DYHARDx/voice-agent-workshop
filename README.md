@@ -18,7 +18,7 @@
 
 <img src="docs/demo.gif" alt="Live demo: typing/speaking commands and the agent acting" width="520">
 
-<sub>↑ Real recording of this repo running on a MacBook — the agent hears a command, picks a tool, acts, and answers out loud.</sub>
+<sub>↑ Real recording of this repo running on a MacBook — the agent hears a command, picks a tool, acts, and answers out loud. (Recorded on a heavily loaded laptop, so it looks slower than normal — typical speeds are in [How fast is it?](#speed).)</sub>
 
 </div>
 
@@ -139,7 +139,7 @@ Open **http://localhost:8000** in **Chrome**, click **Start Listening**, allow t
 
 <img src="docs/screenshots/04_no_mic_upload.png" alt="No microphone: voice file uploaded, agent opened GitHub and scrolled" width="480">
 
-<sub>↑ Captured in a browser with **no microphone at all**: an uploaded mp3 saying "open GitHub and scroll down" → two tool calls → spoken reply.</sub>
+<sub>↑ Captured in a browser with **no microphone at all**: an uploaded mp3 saying "open GitHub and scroll down" → two tool calls → spoken reply. (The latency numbers here are high because the laptop was low on memory — see [How fast is it?](#speed).)</sub>
 
 ### 🧪 Test without the browser
 
@@ -278,6 +278,8 @@ Edit `.env` (created by `setup.sh` from `.env.example`):
 |---|---|---|
 | `OLLAMA_MODEL` | `qwen2.5:3b` | the brain. `llama3.1:8b` is smarter but slower |
 | `TOOLS_ENABLED` | `1` | `0` = chat only, no actions |
+| `TOOL_GATE` | `1` | `1` = a quick "command or just chat?" check runs first, so "hello" never triggers a tool. `0` = skip it |
+| *Persona* (dropdown in the UI) | `Default` | a neutral assistant that knows its actions. `angelina`, `marcus`, `sophia` are optional sales/support demo personas from the original repo |
 | `BROWSER` | `chromium` | `chromium` · `chrome` · `msedge` · `firefox` · `webkit` ([details](#browser)) |
 | `BROWSER_PROFILE_DIR` | *(empty)* | folder = remembered profile / logins |
 | `BROWSER_HEADLESS` | `0` | `1` hides the browser window |
@@ -295,6 +297,7 @@ Edit `.env` (created by `setup.sh` from `.env.example`):
 | "Could not start Ollama" | open the Ollama app, or run `ollama serve` in another terminal |
 | "No microphone" message | expected on mic-less laptops or if permission was denied → upload a voice file or type |
 | Agent keeps interrupting itself | use **headphones**; background noise counts as "you talking" |
+| Everything is very slow | low free RAM → the laptop is swapping. Close other apps (browsers with many tabs are the worst) and restart `./run.sh` |
 | First command is slow | first run loads models and launches Chromium; later ones are faster |
 | A tool didn't trigger | make its docstring clearer; test with `try_tools.py`; try `OLLAMA_MODEL=llama3.1:8b` |
 | Wrong word heard | speak a bit slower — the small `base.en` Whisper model is fast, not perfect |
@@ -308,14 +311,17 @@ Edit `.env` (created by `setup.sh` from `.env.example`):
 
 ## ⏱️ How fast is it?
 
-Measured on a MacBook (Apple Silicon, `qwen2.5:3b`), **from the moment you stop talking**:
+Measured on a MacBook (Apple Silicon, `qwen2.5:3b`) with **free memory available**, counted **from the moment you stop talking**:
 
 | Step | Time |
 |---|---|
 | Speech → text | ~0.3 s |
-| LLM decides the tool | 0.5–2 s |
+| "Command or just chat?" check | ~0.5 s |
+| LLM picks the tool | 0.5–2 s |
 | Tool runs (browser) | 0.2–3 s |
-| **First spoken word** | **~3.8 s** plain chat · **~4 s** quick action (time, scroll) · **~6–8 s** when a web page must load |
+| **First spoken word** | **~2.5 s** plain chat · **~4–5 s** quick action (time, scroll) · **~6–9 s** when a web page must load (YouTube) |
+
+> ⚠️ **Slow? Check your memory first.** The 3B model + Chromium need roughly 6 GB of free RAM. On a laptop that is already swapping (many apps open), we saw the *same* commands take 2–4× longer, and slow page loads can even hit the 30 s browser timeout. Close other apps (especially browsers with many tabs) before the demo.
 
 🚀 Faster? Use a smaller model, keep the browser open, or skip the router for chit-chat — *a great contribution idea!*
 

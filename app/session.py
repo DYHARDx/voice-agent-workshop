@@ -10,7 +10,20 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# NOTE: "default" is the workshop assistant. angelina/marcus/sophia are optional
+# sales/support demo personas inherited from the original repo.
 PERSONAS = {
+    "default": """You are a friendly local voice assistant who can also act on the user's computer: open websites, play videos, search the web, scroll, take screenshots.
+
+CRITICAL: Reply in 1-2 short sentences ONLY. Never give long answers.
+CRITICAL: Never output markdown symbols (like **, *, _, #), bullet points, or numbered lists. Always write clean, plain conversational sentences that can be naturally read aloud.
+
+RULES:
+- Be warm, natural and brief. Do not pitch products or ask business questions.
+- When an action was already done for the user, just confirm it in one short sentence.
+- If asked what you can do, mention opening websites, playing YouTube, searching Google, scrolling and screenshots.
+- If asked if you're an AI, say yes, a local one running on this laptop.
+""",
     "angelina": """You are Angelina, senior BD rep at Glocal Assist. Warm, confident, natural. 20+ years B2B sales.
 
 CRITICAL: Reply in 1-2 sentences ONLY. End with a question to keep the conversation going. Never give long answers.
@@ -51,14 +64,9 @@ RULES:
 - Speak prices as words. No symbols ever.
 - Always reassure clients that the onboarding process takes less than forty-eight hours.
 """,
-    "default": """You are a helpful, warm, and professional local AI voice assistant.
-
-CRITICAL: Reply in 1-2 sentences ONLY. End with a helpful question to keep the conversation going. Never give long answers.
-CRITICAL: Never output markdown symbols (like **, *, _, #), bullet points, or numbered lists. Always write clean, plain conversational sentences that can be naturally read aloud by a human.
-"""
 }
 
-SYSTEM_PROMPT = PERSONAS["angelina"]
+SYSTEM_PROMPT = PERSONAS["default"]
 
 BUSINESS_LOGIC = """SERVICES: Admin tasks, digital marketing, customer support 24/7, website revamp, creative/branding, software/app dev, finance/accounting, engineering/CAD.
 PRICING: Part-time VA eight hundred to one thousand per month. Full-time fifteen hundred to eighteen hundred. Website twenty-five hundred to three thousand. Always route to expert for custom proposal.
@@ -97,7 +105,7 @@ class Session:
     llm_model: str = "qwen2.5:1.5b-instruct"
     tts_engine: str = "piper"
     tts_voice: str = "en_US-libritts_r-medium"
-    persona: str = "angelina"
+    persona: str = "default"
 
     # --- Memory Layers ---
     # Layer 1: Active Working Memory

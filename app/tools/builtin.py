@@ -33,7 +33,7 @@ KNOWN_SITES = {
 
 @tool
 async def open_website(site: str) -> str:
-    """Open a website in the browser, for example YouTube, GitHub or Gmail.
+    """Open a website in the browser, for example YouTube, GitHub or Gmail. Use for "open X" or "go to X".
 
     Args:
         site: name of the website (like "youtube") or a web address (like "example.com")
