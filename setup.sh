@@ -20,8 +20,12 @@ say "2/6  Creating Python virtual environment (.venv)"
 say "3/6  Installing Python packages (takes a few minutes the first time)"
 .venv/bin/pip install --quiet -r requirements.txt
 
-say "4/6  Installing the Playwright browser (Chromium)"
+say "4/6  Installing the Playwright browser"
+[ -f .env ] || cp .env.example .env
+WANT=$(grep -E '^BROWSER=' .env | cut -d= -f2 | tr -d ' ')
+[ "${WANT:-chromium}" = "chromium" ] || echo "   (your .env asks for BROWSER=$WANT — installing it too)"
 .venv/bin/python -m playwright install chromium
+case "$WANT" in firefox|webkit|chrome|msedge) .venv/bin/python -m playwright install "$WANT" ;; esac
 
 say "5/6  Downloading the voice (TTS) models"
 mkdir -p models/kokoro models/piper
@@ -32,7 +36,6 @@ dl https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/voi
 dl https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files/kokoro-v0_19.onnx   models/kokoro/kokoro-v0_19.onnx
 
 say "6/6  Downloading the brain (Ollama model, ~2 GB)"
-[ -f .env ] || cp .env.example .env
 if ! curl -s localhost:11434 >/dev/null; then
   echo "Starting Ollama in the background…"
   (nohup ollama serve >/tmp/ollama.log 2>&1 &)
