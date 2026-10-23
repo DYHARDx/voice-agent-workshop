@@ -1,3 +1,5 @@
+> ⚠️ **Heads-up:** this is the original deep-dive for the base voice pipeline (VAD, memory, personas, Docker). It was written for the earlier repo, so **ignore its install, Docker and folder-path instructions** — in *this* repo use `./setup.sh` and `./run.sh` from the [main README](../README.md). Tool calling / browser control is *not* covered here.
+
 <p align="center">
   <h1 align="center">🎙️ Realtime Voice AI System</h1>
   <p align="center">

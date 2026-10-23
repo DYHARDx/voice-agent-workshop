@@ -25,9 +25,11 @@
 ---
 
 ## 📑 Contents
-[How it works](#-how-it-works) · [Quick start](#-quick-start--from-zero) · [Talk to it](#%EF%B8%8F-three-ways-to-talk-to-it) · [Add your own tool](#%EF%B8%8F-add-your-own-tool--the-workshop-exercise) · [Browser & profile](#-use-a-different-browser-or-a-saved-profile) · [Project map](#%EF%B8%8F-project-map) · [Settings](#%EF%B8%8F-settings) · [Troubleshooting](#-troubleshooting) · [Speed](#%EF%B8%8F-how-fast-is-it) · [Contribute](#-contributing)
+[How it works](#how-it-works) · [Quick start](#quick-start) · [Talk to it](#talk) · [Add your own tool](#add-tool) · [Browser & profile](#browser) · [Project map](#project-map) · [Settings](#settings) · [Troubleshooting](#troubleshooting) · [Speed](#speed) · [Contribute](#contributing)
 
 ---
+
+<a id="how-it-works"></a>
 
 ## 🧠 How it works
 
@@ -64,6 +66,8 @@ flowchart LR
 </table>
 
 ---
+
+<a id="quick-start"></a>
 
 ## 🚀 Quick start — from zero
 
@@ -121,6 +125,8 @@ Open **http://localhost:8000** in **Chrome**, click **Start Listening**, allow t
 
 ---
 
+<a id="talk"></a>
+
 ## 🎙️ Three ways to talk to it
 
 **A laptop microphone is NOT required.** All three go through the exact same pipeline, and the agent always **speaks back** through your speakers.
@@ -144,6 +150,8 @@ Open **http://localhost:8000** in **Chrome**, click **Start Listening**, allow t
 ```
 
 ---
+
+<a id="add-tool"></a>
 
 ## ✏️ Add your own tool — the workshop exercise
 
@@ -197,6 +205,8 @@ This uses Ollama's native tool-calling, so it works with any tool-capable local 
 
 ---
 
+<a id="browser"></a>
+
 ## 🌐 Use a different browser or a saved profile
 
 By default the agent opens a **fresh, empty Chromium** (installed by `setup.sh`). Want it to use **your Chrome**, **Edge**, **Firefox** — or stay **logged in** to YouTube/Gmail? Just edit `.env` — no code changes:
@@ -230,6 +240,8 @@ Test your choice in 10 seconds (run it **twice** with a profile set — the seco
 
 ---
 
+<a id="project-map"></a>
+
 ## 🗺️ Project map
 
 ```
@@ -256,6 +268,8 @@ voice-agent-workshop/
 
 ---
 
+<a id="settings"></a>
+
 ## ⚙️ Settings
 
 Edit `.env` (created by `setup.sh` from `.env.example`):
@@ -264,11 +278,13 @@ Edit `.env` (created by `setup.sh` from `.env.example`):
 |---|---|---|
 | `OLLAMA_MODEL` | `qwen2.5:3b` | the brain. `llama3.1:8b` is smarter but slower |
 | `TOOLS_ENABLED` | `1` | `0` = chat only, no actions |
-| `BROWSER` | `chromium` | `chromium` · `chrome` · `msedge` · `firefox` · `webkit` ([details](#-use-a-different-browser-or-a-saved-profile)) |
+| `BROWSER` | `chromium` | `chromium` · `chrome` · `msedge` · `firefox` · `webkit` ([details](#browser)) |
 | `BROWSER_PROFILE_DIR` | *(empty)* | folder = remembered profile / logins |
 | `BROWSER_HEADLESS` | `0` | `1` hides the browser window |
 
 ---
+
+<a id="troubleshooting"></a>
 
 ## 🛟 Troubleshooting
 
@@ -288,6 +304,8 @@ Edit `.env` (created by `setup.sh` from `.env.example`):
 
 ---
 
+<a id="speed"></a>
+
 ## ⏱️ How fast is it?
 
 Measured on a MacBook (Apple Silicon, `qwen2.5:3b`), **from the moment you stop talking**:
@@ -302,6 +320,8 @@ Measured on a MacBook (Apple Silicon, `qwen2.5:3b`), **from the moment you stop 
 🚀 Faster? Use a smaller model, keep the browser open, or skip the router for chit-chat — *a great contribution idea!*
 
 ---
+
+<a id="contributing"></a>
 
 ## 🤝 Contributing
 
