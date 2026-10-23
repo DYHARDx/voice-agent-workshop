@@ -1,0 +1,7 @@
+.venv/
+.env
+__pycache__/
+models/
+sessions/
+/screenshots/
+ai_reply.wav

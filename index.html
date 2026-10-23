@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI | Realtime Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --success-color: #10b981;
+            --ai-color: #8b5cf6;
+            --warning-color: #f59e0b;
+            --partial-color: rgba(59, 130, 246, 0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            background-image:
+                radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%),
+                radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.15), transparent 40%);
+        }
+
+        .container { max-width: 800px; width: 100%; margin-top: 1rem; }
+
+        header { text-align: center; margin-bottom: 2rem; }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle { color: #94a3b8; font-size: 1.05rem; }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        #startBtn {
+            background-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+        }
+        #startBtn:hover { background-color: #2563eb; transform: translateY(-2px); }
+        #startBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        #stopBtn {
+            background-color: transparent;
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+        #stopBtn:hover { background-color: rgba(239, 68, 68, 0.1); }
+        #stopBtn:disabled { opacity: 0.5; cursor: not-allowed; background-color: transparent; }
+
+        /* ── Status bar ── */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .status-indicator { display: flex; align-items: center; gap: 0.5rem; }
+
+        .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background-color: #475569;
+            transition: background-color 0.3s ease;
+        }
+        .dot.connected { background-color: var(--success-color); }
+        .dot.speaking { background-color: var(--warning-color); animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .session-id {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-family: monospace;
+        }
+
+        /* ── Partial banner ── */
+        .partial-banner {
+            background: var(--partial-color);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 10px;
+            padding: 0.6rem 1rem;
+            margin-bottom: 1rem;
+            display: none;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.9rem;
+            color: #93c5fd;
+        }
+        .partial-banner.visible { display: flex; }
+        .partial-text { flex: 1; font-style: italic; }
+        .partial-latency { font-size: 0.75rem; color: #64748b; font-family: monospace; }
+
+        .typing-dots { display: flex; gap: 3px; }
+        .typing-dots span {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #60a5fa;
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* ── Dashboard ── */
+        .dashboard {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            display: none;
+            margin-bottom: 1.5rem;
+        }
+        .dashboard.visible { display: block; }
+        .dashboard h3 { margin-bottom: 0.8rem; font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;}
+        .metric-row { display: flex; justify-content: space-between; padding: 0.4rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .metric-row:last-child { border-bottom: none; }
+        .metric-row.total { font-weight: bold; color: var(--accent-color); padding-top: 0.8rem; }
+        .metric-val { font-family: monospace; }
+
+        /* ── Control Panel ── */
+        .control-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            transition: opacity 0.3s ease;
+        }
+        .control-panel.locked {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        .control-panel.locked::after {
+            content: '🔒 Config locked during session';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.8rem;
+            color: #94a3b8;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            white-space: nowrap;
+        }
+        .cp-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            flex: 1;
+            min-width: 150px;
+            position: relative;
+        }
+        .cp-group label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+        .cp-group select {
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .cp-group select:focus {
+            border-color: var(--accent-color);
+        }
+        .cp-group select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ── Chat box ── */
+        .chat-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 200px;
+            max-height: 50vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+
+        .message.ai {
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .role {
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .message.user .role { color: #60a5fa; }
+        .message.ai .role { color: #a78bfa; }
+
+        .latency {
+            font-size: 0.72rem;
+            color: #64748b;
+            font-family: monospace;
+        }
+
+        .first-token-badge {
+            font-size: 0.72rem;
+            color: var(--success-color);
+            font-family: monospace;
+            margin-right: 0.5rem;
+        }
+
+        .text { word-break: break-word; }
+
+        /* Streaming AI message cursor */
+        .streaming-cursor::after {
+            content: '▊';
+            animation: blink 0.7s infinite;
+            color: #a78bfa;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Scrollbar */
+        .chat-box::-webkit-scrollbar { width: 8px; }
+        .chat-box::-webkit-scrollbar-track { background: transparent; }
+        .chat-box::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+        .chat-box::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        /* ── 🛠️ Action layer (tool calling) ── */
+        .tool-card {
+            margin: 0.6rem 0; padding: 0.7rem 1rem; border-radius: 12px;
+            background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.35);
+            font-size: 0.9rem; color: #d1fae5;
+        }
+        .tool-card.failed { background: rgba(248, 113, 113, 0.08); border-color: rgba(248, 113, 113, 0.4); color: #fecaca; }
+        .tool-card .tool-name { font-family: ui-monospace, Menlo, monospace; font-weight: 600; }
+        .tool-card .tool-result { opacity: 0.85; margin-top: 0.25rem; }
+        .tool-card .tool-ms { float: right; opacity: 0.6; font-size: 0.8rem; }
+        .tools-panel { margin-bottom: 1rem; font-size: 0.85rem; color: #9ca3af; }
+        .tools-panel .chip {
+            display: inline-block; margin: 0.15rem 0.25rem 0.15rem 0; padding: 0.15rem 0.6rem;
+            border-radius: 999px; background: rgba(167, 139, 250, 0.15); color: #c4b5fd;
+            font-family: ui-monospace, Menlo, monospace; font-size: 0.78rem; cursor: help;
+        }
+        .text-input-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .text-input-row input {
+            flex: 1; padding: 0.7rem 1rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05); color: inherit; font-size: 0.95rem;
+        }
+        .text-input-row button { padding: 0.7rem 1.2rem; }
+        .upload-label {
+            padding: 0.55rem 1rem; border-radius: 10px; border: 1px dashed rgba(167,139,250,0.5);
+            color: #c4b5fd; font-size: 0.9rem; cursor: pointer;
+        }
+        .upload-label.disabled { opacity: 0.4; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Realtime Voice AI</h1>
+        <p class="subtitle">Streaming STT → Local LLM → Live Response</p>
+    </header>
+
+    <div class="container">
+
+        <!-- ── Control Panel (PRE-SESSION config) ── -->
+        <div class="control-panel" id="controlPanel" style="position: relative;">
+            <div class="cp-group">
+                <label for="llmSelect">LLM Model</label>
+                <select id="llmSelect"><option>Not connected</option></select>
+            </div>
+            <div class="cp-group">
+                <label for="personaSelect">Persona</label>
+                <select id="personaSelect"><option>Not connected</option></select>
+            </div>
+            <div class="cp-group">
+                <label for="ttsEngineSelect">TTS Engine</label>
+                <select id="ttsEngineSelect"><option>Not connected</option></select>
+            </div>
+            <div class="cp-group">
+                <label for="ttsVoiceSelect">TTS Voice</label>
+                <select id="ttsVoiceSelect"><option>Not connected</option></select>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn">Start Listening</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <span class="session-id" id="sessionId" style="display:none;"></span>
+        </div>
+
+        <div class="tools-panel" id="toolsPanel" style="display:none;">
+            🛠️ Things I can do (try saying them!): <span id="toolsChips"></span>
+        </div>
+
+        <div class="text-input-row">
+            <input id="textInput" type="text" placeholder="…or type a command here (e.g. play lofi music on youtube)" disabled>
+            <button id="sendTextBtn" disabled>Send</button>
+        </div>
+        <div class="text-input-row" style="margin-top:-0.5rem;">
+            <label class="upload-label" id="uploadLabel">🎧 No mic? Upload a voice file (wav / mp3 / m4a)
+                <input id="audioFileInput" type="file" accept="audio/*" hidden disabled>
+            </label>
+        </div>
+
+        <div class="partial-banner" id="partialBanner">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span class="partial-text" id="partialText">…</span>
+            <span class="partial-latency" id="partialLatency"></span>
+        </div>
+
+        <div class="dashboard" id="dashboardPanel">
+            <h3>⏱️ Turn Metrics</h3>
+            <div class="metric-row"><span class="metric-label">Speech Duration</span><span class="metric-val" id="mSpeech">-</span></div>
+            <div class="metric-row"><span class="metric-label">STT Latency</span><span class="metric-val" id="mSTT">-</span></div>
+            <div class="metric-row"><span class="metric-label">LLM First Token (TTFT)</span><span class="metric-val" id="mLLM">-</span></div>
+            <div class="metric-row"><span class="metric-label">Audio First Chunk</span><span class="metric-val" id="mTTS">-</span></div>
+            <div class="metric-row total"><span class="metric-label">End-to-End Latency</span><span class="metric-val" id="mTotal">-</span></div>
+        </div>
+
+        <div class="dashboard" id="sysMetricsPanel" style="display: none; margin-bottom: 1.5rem;">
+            <h3>💻 Live Resources</h3>
+            <div class="metric-row"><span class="metric-label">System CPU</span><span class="metric-val" id="sysCpu">-</span></div>
+            <div class="metric-row"><span class="metric-label">System RAM</span><span class="metric-val" id="sysMem">-</span></div>
+        </div>
+
+        <div class="chat-box" id="chatBox"></div>
+    </div>
+
+    <script>
+        // ── State ──
+        let ws = null;
+        let audioContext = null;
+        let processor = null;
+        let input = null;
+        let globalStream = null;
+        let sessionActive = false;
+
+        // TTS voices cache received from server
+        let globalTtsVoices = {};
+
+        // ── DOM refs ──
+        const llmSelect = document.getElementById('llmSelect');
+        const personaSelect = document.getElementById('personaSelect');
+        const ttsEngineSelect = document.getElementById('ttsEngineSelect');
+        const ttsVoiceSelect = document.getElementById('ttsVoiceSelect');
+        const controlPanel = document.getElementById('controlPanel');
+
+        const startBtn       = document.getElementById('startBtn');
+        const stopBtn        = document.getElementById('stopBtn');
+        const statusDot      = document.getElementById('statusDot');
+        const statusText     = document.getElementById('statusText');
+        const sessionIdEl    = document.getElementById('sessionId');
+        const chatBox        = document.getElementById('chatBox');
+        const partialBanner  = document.getElementById('partialBanner');
+        const partialText    = document.getElementById('partialText');
+        const partialLatency = document.getElementById('partialLatency');
+
+        // ── TTS Playback State ──
+        let ttsContext = null;
+        let ttsNextStartTime = 0;
+        let ttsNodes = [];
+
+        // ── Streaming AI message state ──
+        let activeAiMsg = null;
+        let activeAiText = null;
+
+        // ── Typed commands (fallback when the room is noisy) ──
+        const textInput = document.getElementById('textInput');
+        const sendTextBtn = document.getElementById('sendTextBtn');
+        function sendTyped() {
+            const text = textInput.value.trim();
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+            ws.send(JSON.stringify({ type: 'text_input', text }));
+            textInput.value = '';
+        }
+        sendTextBtn.addEventListener('click', sendTyped);
+        textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendTyped(); });
+
+        // ── Voice file upload (works with or without a laptop microphone) ──
+        const audioFileInput = document.getElementById('audioFileInput');
+        const uploadLabel = document.getElementById('uploadLabel');
+        uploadLabel.classList.add('disabled');
+        audioFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (file) await sendAudioFile(file);
+        });
+
+        async function sendAudioFile(file) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            statusText.textContent = `Playing "${file.name}" to the agent…`;
+            // 1. decode any audio format, 2. resample to 16 kHz mono (what the server expects)
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const decodeCtx = new AudioCtx();
+            const decoded = await decodeCtx.decodeAudioData(await file.arrayBuffer());
+            decodeCtx.close();
+            const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * 16000), 16000);
+            const src = offline.createBufferSource();
+            src.buffer = decoded; src.connect(offline.destination); src.start();
+            const f32 = (await offline.startRendering()).getChannelData(0);
+
+            const toPcm = (floats) => {
+                const pcm = new Int16Array(floats.length);
+                for (let i = 0; i < floats.length; i++) {
+                    const v = Math.max(-1, Math.min(1, floats[i]));
+                    pcm[i] = v < 0 ? v * 0x8000 : v * 0x7FFF;
+                }
+                return pcm.buffer;
+            };
+            const CHUNK = 2048; // 128 ms, same as the live mic
+            for (let i = 0; i < f32.length && ws && ws.readyState === WebSocket.OPEN; i += CHUNK) {
+                ws.send(toPcm(f32.subarray(i, i + CHUNK)));
+                await new Promise(r => setTimeout(r, 40));
+            }
+            // trailing silence so the server notices we stopped talking
+            for (let i = 0; i < 16 && ws && ws.readyState === WebSocket.OPEN; i++) {
+                ws.send(new Int16Array(CHUNK).buffer);
+                await new Promise(r => setTimeout(r, 100));
+            }
+        }
+
+        // ── Control Panel ──
+        ttsEngineSelect.addEventListener('change', (e) => {
+            populateVoices(e.target.value);
+        });
+
+        function populateVoices(engine) {
+            ttsVoiceSelect.innerHTML = '';
+            const voices = globalTtsVoices[engine] || [];
+            voices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                ttsVoiceSelect.appendChild(opt);
+            });
+        }
+
+        function lockControlPanel() {
+            controlPanel.classList.add('locked');
+        }
+
+        function unlockControlPanel() {
+            controlPanel.classList.remove('locked');
+        }
+
+        // ── Helpers ──
+        function appendMessage(role, text, latencyMs, firstTokenMs) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${role}`;
+
+            const roleName = role === 'user' ? 'You' : 'AI';
+            let badges = '';
+            if (latencyMs != null) {
+                badges += `<span class="latency">⏱️ ${latencyMs}ms</span>`;
+            }
+            if (firstTokenMs != null) {
+                badges += `<span class="first-token-badge">1st token: ${firstTokenMs}ms</span>`;
+            }
+
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="role">${roleName}</span>
+                    <span>${badges}</span>
+                </div>
+                <div class="text">${text}</div>
+            `;
+
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv;
+        }
+
+        function startStreamingAiMessage() {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message ai streaming';
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="role">AI</span>
+                    <span class="latency-container"></span>
+                </div>
+                <div class="text streaming-cursor"></div>
+            `;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            activeAiMsg = msgDiv;
+            activeAiText = msgDiv.querySelector('.text');
+            return msgDiv;
+        }
+
+        function appendTokenToAi(token) {
+            if (!activeAiText) return;
+            activeAiText.textContent += token;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function finalizeAiMessage(firstTokenMs, totalMs) {
+            if (!activeAiMsg) return;
+
+            activeAiMsg.classList.remove('streaming');
+            activeAiText.classList.remove('streaming-cursor');
+
+            const container = activeAiMsg.querySelector('.latency-container');
+            if (container) {
+                let badges = '';
+                if (firstTokenMs != null) {
+                    badges += `<span class="first-token-badge">1st token: ${firstTokenMs}ms</span>`;
+                }
+                if (totalMs != null) {
+                    badges += `<span class="latency">⏱️ ${totalMs}ms total</span>`;
+                }
+                container.innerHTML = badges;
+            }
+
+            activeAiMsg = null;
+            activeAiText = null;
+        }
+
+        function showPartial(text, latencyMs) {
+            partialBanner.classList.add('visible');
+            partialText.textContent = text;
+            partialLatency.textContent = latencyMs != null ? `${latencyMs}ms` : '';
+        }
+
+        function hidePartial() {
+            partialBanner.classList.remove('visible');
+            partialText.textContent = '…';
+            partialLatency.textContent = '';
+        }
+
+        function setStatus(state) {
+            statusDot.classList.remove('connected', 'speaking');
+            switch (state) {
+                case 'connected':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'Connected — waiting for speech';
+                    break;
+                case 'speaking':
+                    statusDot.classList.add('connected', 'speaking');
+                    statusText.textContent = 'Listening…';
+                    break;
+                case 'processing':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'Processing…';
+                    break;
+                case 'streaming':
+                    statusDot.classList.add('connected');
+                    statusText.textContent = 'AI responding…';
+                    break;
+                default:
+                    statusText.textContent = 'Disconnected';
+            }
+        }
+
+        // ── TTS Playback ──
+        function initTtsContext(sampleRate) {
+            // Create TTS AudioContext at the CORRECT sample rate
+            // (this avoids resampling distortion)
+            if (ttsContext) {
+                ttsContext.close();
+            }
+            ttsContext = new (window.AudioContext || window.webkitAudioContext)();
+            ttsNextStartTime = 0;
+            ttsNodes = [];
+        }
+
+        function flushAudioQueue() {
+            ttsNodes.forEach(node => {
+                try { node.stop(); } catch (e) {}
+            });
+            ttsNodes = [];
+            ttsNextStartTime = 0;
+        }
+
+        function scheduleAudioChunk(base64Data, sampleRate) {
+            if (!ttsContext) return;
+
+            // Resume if suspended (browser autoplay policy)
+            if (ttsContext.state === 'suspended') {
+                ttsContext.resume();
+            }
+
+            const binaryStr = atob(base64Data);
+            const len = binaryStr.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+            }
+
+            const int16Array = new Int16Array(bytes.buffer);
+            const float32Array = new Float32Array(int16Array.length);
+            for (let i = 0; i < int16Array.length; i++) {
+                float32Array[i] = int16Array[i] / 32768.0;
+            }
+
+            // Use the EXACT sample rate from the TTS engine (22050 for Piper, 24000 for Kokoro)
+            const sr = sampleRate || 22050;
+            const audioBuffer = ttsContext.createBuffer(1, float32Array.length, sr);
+            audioBuffer.getChannelData(0).set(float32Array);
+
+            const source = ttsContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ttsContext.destination);
+
+            // Schedule gapless playback
+            const now = ttsContext.currentTime;
+            if (ttsNextStartTime < now) {
+                ttsNextStartTime = now + 0.02; // tiny buffer to avoid clicks
+            }
+
+            source.start(ttsNextStartTime);
+            ttsNextStartTime += audioBuffer.duration;
+
+            ttsNodes.push(source);
+            source.onended = () => {
+                const idx = ttsNodes.indexOf(source);
+                if (idx > -1) ttsNodes.splice(idx, 1);
+            };
+        }
+
+        // ── Streaming ──
+        async function startStreaming() {
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                ws = new WebSocket(`${protocol}//${window.location.host}/ws/stream`);
+
+                ws.onopen = async () => {
+                    setStatus('connected');
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    sessionActive = true;
+                    textInput.disabled = false; sendTextBtn.disabled = false;
+                    audioFileInput.disabled = false; uploadLabel.classList.remove('disabled');
+
+                    // Lock the control panel — no changes during session
+                    lockControlPanel();
+
+                    // Send the chosen config to server IMMEDIATELY on connect
+                    const config = {
+                        type: 'set_config',
+                        llm_model: llmSelect.value,
+                        persona: personaSelect.value,
+                        tts_engine: ttsEngineSelect.value,
+                        tts_voice: ttsVoiceSelect.value
+                    };
+                    ws.send(JSON.stringify(config));
+
+                    // Initialize TTS playback context on user gesture
+                    initTtsContext();
+
+                    // No microphone (or permission denied)? Keep the session alive:
+                    // the user can still upload a voice file or type commands.
+                    let stream;
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                sampleRate: 16000,
+                                channelCount: 1,
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true,
+                            },
+                            video: false,
+                        });
+                    } catch (micErr) {
+                        console.warn('No microphone available:', micErr);
+                        statusText.textContent = 'No microphone — upload a voice file or type a command';
+                        return;
+                    }
+                    globalStream = stream;
+
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioCtx({ sampleRate: 16000 });
+                    input = audioContext.createMediaStreamSource(stream);
+
+                    // 2048 samples @ 16kHz = 128ms chunks
+                    processor = audioContext.createScriptProcessor(2048, 1, 1);
+
+                    processor.onaudioprocess = (e) => {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            const f32 = e.inputBuffer.getChannelData(0);
+                            const pcm = new Int16Array(f32.length);
+                            for (let i = 0; i < f32.length; i++) {
+                                let s = Math.max(-1, Math.min(1, f32[i]));
+                                pcm[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                            }
+                            ws.send(pcm.buffer);
+                        }
+                    };
+
+                    input.connect(processor);
+                    processor.connect(audioContext.destination);
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+
+                    switch (data.type) {
+                        case 'available_models':
+                            // Populate LLM dropdown
+                            llmSelect.innerHTML = '';
+                            data.llms.forEach(m => {
+                                const opt = document.createElement('option');
+                                opt.value = m;
+                                opt.textContent = m;
+                                llmSelect.appendChild(opt);
+                            });
+
+                            // Populate Persona dropdown
+                            personaSelect.innerHTML = '';
+                            if (data.personas) {
+                                data.personas.forEach(p => {
+                                    const opt = document.createElement('option');
+                                    opt.value = p;
+                                    // Capitalize first letter for premium display label
+                                    opt.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+                                    personaSelect.appendChild(opt);
+                                });
+                            }
+
+                            // Populate TTS Engine dropdown
+                            ttsEngineSelect.innerHTML = '';
+                            data.tts_engines.forEach(e => {
+                                const opt = document.createElement('option');
+                                opt.value = e;
+                                opt.textContent = e;
+                                ttsEngineSelect.appendChild(opt);
+                            });
+
+                            // Cache voices and populate for the first engine
+                            globalTtsVoices = data.tts_voices;
+                            if (data.tts_engines.length > 0) {
+                                populateVoices(data.tts_engines[0]);
+                            }
+                            break;
+
+                        case 'session_started':
+                            sessionIdEl.textContent = `Session: ${data.session_id}`;
+                            sessionIdEl.style.display = 'inline';
+                            break;
+
+                        case 'user_started_speaking':
+                            setStatus('speaking');
+                            flushAudioQueue(); // BARGE-IN: stop active TTS instantly
+                            break;
+
+                        case 'partial_transcript':
+                            showPartial(data.text, data.latency_ms);
+                            break;
+
+                        case 'user_stopped_speaking':
+                            setStatus('processing');
+                            hidePartial();
+                            break;
+
+                        case 'tools_list': {
+                            const chips = document.getElementById('toolsChips');
+                            chips.innerHTML = '';
+                            data.tools.forEach(t => {
+                                const c = document.createElement('span');
+                                c.className = 'chip'; c.textContent = t.name; c.title = t.description;
+                                chips.appendChild(c);
+                            });
+                            document.getElementById('toolsPanel').style.display = 'block';
+                            break;
+                        }
+
+                        case 'tool_call': window._lastToolArgs = data.arguments; break;
+
+                        case 'tool_result': {
+                            data.arguments = data.arguments || window._lastToolArgs;
+                            const card = document.createElement('div');
+                            card.className = 'tool-card' + (data.ok ? '' : ' failed');
+                            const args = Object.entries(data.arguments || {}).map(([k, v]) => `${k}="${v}"`).join(', ');
+                            card.innerHTML = `<span class="tool-ms">${data.ms}ms</span>
+                                <span class="tool-name">${data.ok ? '🔧' : '❌'} ${data.name}(${args})</span>
+                                <div class="tool-result">${data.result}</div>`;
+                            // show the action card above the AI reply that is being streamed
+                            if (activeAiMsg && activeAiMsg.parentNode === chatBox) chatBox.insertBefore(card, activeAiMsg);
+                            else chatBox.appendChild(card);
+                            chatBox.scrollTop = chatBox.scrollHeight;
+                            break;
+                        }
+
+                        case 'final_transcript':
+                            hidePartial();
+                            appendMessage('user', data.text, data.latency_ms);
+                            break;
+
+                        case 'llm_processing_started':
+                            setStatus('streaming');
+                            startStreamingAiMessage();
+                            break;
+
+                        case 'llm_partial_response':
+                            appendTokenToAi(data.token);
+                            if (data.first_token_ms != null && activeAiMsg) {
+                                const container = activeAiMsg.querySelector('.latency-container');
+                                if (container && !container.innerHTML) {
+                                    container.innerHTML = `<span class="first-token-badge">1st token: ${data.first_token_ms}ms</span>`;
+                                }
+                            }
+                            break;
+
+                        case 'llm_final_response':
+                            finalizeAiMessage(data.first_token_ms, data.total_ms);
+                            break;
+
+                        case 'assistant_finished':
+                            setStatus('connected');
+                            break;
+
+                        case 'assistant_speaking_started':
+                            break;
+
+                        case 'assistant_audio_chunk':
+                            scheduleAudioChunk(data.audio_b64, data.sample_rate);
+                            break;
+
+                        case 'assistant_speaking_finished':
+                            break;
+
+                        case 'error':
+                            console.error('Server error:', data.message);
+                            break;
+
+                        case 'turn_metrics':
+                            document.getElementById('dashboardPanel').classList.add('visible');
+                            const m = data.metrics;
+                            const speechDur = m.speech_end;
+                            const sttLat = m.stt_end && m.speech_end ? m.stt_end - m.speech_end : null;
+                            const llmTtft = m.llm_first_token && m.stt_end ? m.llm_first_token - m.stt_end : null;
+                            const ttsTtfa = m.tts_first_chunk && m.llm_first_token ? m.tts_first_chunk - m.llm_first_token : null;
+                            const total = m.tts_first_chunk && m.speech_end ? m.tts_first_chunk - m.speech_end : null;
+
+                            document.getElementById('mSpeech').textContent = speechDur ? speechDur + 'ms' : '-';
+                            document.getElementById('mSTT').textContent = sttLat ? sttLat + 'ms' : '-';
+                            document.getElementById('mLLM').textContent = llmTtft ? llmTtft + 'ms' : '-';
+                            document.getElementById('mTTS').textContent = ttsTtfa ? ttsTtfa + 'ms' : '-';
+                            document.getElementById('mTotal').textContent = total ? total + 'ms' : '-';
+                            break;
+
+                        case 'system_metrics':
+                            document.getElementById('sysMetricsPanel').style.display = 'block';
+                            const cpuEl = document.getElementById('sysCpu');
+                            cpuEl.textContent = `${data.cpu_percent}%`;
+                            cpuEl.style.color = data.cpu_percent > 80 ? '#ef4444' : (data.cpu_percent > 50 ? '#f59e0b' : '#10b981');
+                            document.getElementById('sysMem').textContent = `${data.mem_used_gb} GB (${data.mem_percent}%)`;
+                            break;
+
+                        case 'config_updated':
+                            console.log('Config accepted by server');
+                            break;
+
+                        // Legacy fallbacks
+                        case 'transcript':
+                            appendMessage('user', data.text, data.latency_ms);
+                            break;
+                        case 'ai_response':
+                        case 'llm_response':
+                            appendMessage('ai', data.text, data.latency_ms);
+                            break;
+                    }
+                };
+
+                ws.onclose = () => stopStreaming();
+                ws.onerror = (err) => { console.error("WS error:", err); stopStreaming(); };
+
+            } catch (err) {
+                console.error("Mic error:", err);
+                alert("Could not access microphone.");
+                stopStreaming();
+            }
+        }
+
+        function stopStreaming() {
+            sessionActive = false;
+            textInput.disabled = true; sendTextBtn.disabled = true;
+            audioFileInput.disabled = true; uploadLabel.classList.add('disabled');
+            if (processor) { processor.disconnect(); processor = null; }
+            if (input) { input.disconnect(); input = null; }
+            if (audioContext) { audioContext.close(); audioContext = null; }
+            if (globalStream) { globalStream.getTracks().forEach(t => t.stop()); globalStream = null; }
+            if (ws) { ws.close(); ws = null; }
+            if (ttsContext) { flushAudioQueue(); ttsContext.close(); ttsContext = null; }
+
+            setStatus('disconnected');
+            hidePartial();
+            finalizeAiMessage(null, null);
+            sessionIdEl.style.display = 'none';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+
+            // Unlock the control panel for reconfiguration
+            unlockControlPanel();
+        }
+
+        startBtn.addEventListener('click', startStreaming);
+        stopBtn.addEventListener('click', stopStreaming);
+
+        // ── Pre-fetch available models on page load ──
+        async function prefetchModels() {
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const prefetchWs = new WebSocket(`${protocol}//${window.location.host}/ws/stream`);
+                prefetchWs.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'available_models') {
+                        llmSelect.innerHTML = '';
+                        data.llms.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m;
+                            opt.textContent = m;
+                            llmSelect.appendChild(opt);
+                        });
+
+                        personaSelect.innerHTML = '';
+                        if (data.personas) {
+                            data.personas.forEach(p => {
+                                const opt = document.createElement('option');
+                                opt.value = p;
+                                opt.textContent = p.charAt(0).toUpperCase() + p.slice(1);
+                                personaSelect.appendChild(opt);
+                            });
+                        }
+
+                        ttsEngineSelect.innerHTML = '';
+                        data.tts_engines.forEach(e => {
+                            const opt = document.createElement('option');
+                            opt.value = e;
+                            opt.textContent = e;
+                            ttsEngineSelect.appendChild(opt);
+                        });
+
+                        globalTtsVoices = data.tts_voices;
+                        if (data.tts_engines.length > 0) {
+                            populateVoices(data.tts_engines[0]);
+                        }
+
+                        // Close the prefetch connection
+                        prefetchWs.close();
+                    }
+                };
+                prefetchWs.onerror = () => prefetchWs.close();
+            } catch (e) {
+                console.warn('Prefetch failed, will populate on connect:', e);
+            }
+        }
+
+        // Auto-prefetch on page load
+        prefetchModels();
+    </script>
+</body>
+</html>
